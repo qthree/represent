@@ -1,0 +1,20 @@
+[package]
+name = "represent_derive"
+version = "0.1.0"
+authors = ["qthree <qthree3@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+syn = {version = "1", features = ["full"]}
+proc-macro2 = "1"
+#darling = "0.13"
+synstructure  = "0.12"
+
+[dev-dependencies]
+represent = { path = ".." }

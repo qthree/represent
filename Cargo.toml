@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = ["derive", "extra"]
+
+[package]
+name = "represent"
+version = "0.1.0"
+authors = ["qthree <qthree3@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+derive = ["represent_derive"]
+
+[dependencies]
+represent_derive = { path = "derive", optional = true }
