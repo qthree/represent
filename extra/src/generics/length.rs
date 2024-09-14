@@ -6,6 +6,7 @@ use represent::{
 };
 
 use super::{slots::Slots, Has};
+use crate::traits::BytesLeft;
 //use crate::{Encrypt, MakeError, Sniffer};
 
 #[derive(Debug, Default)]
@@ -345,6 +346,53 @@ where
         } else {
             Ok(())
         }
+    }
+}
+
+// endregion
+
+// region: LenRest
+
+#[derive(Debug, Default)]
+pub struct LenRest<V = ()>(pub(crate) usize, pub(crate) PhantomData<V>);
+
+impl<V> LenRest<V> {
+    pub fn new(len: usize) -> Self {
+        LenRest(len, PhantomData)
+    }
+}
+
+crate::impl_final_const!(
+    [V] for LenRest<V> = 0
+);
+
+crate::impl_visit_empty!([V] for LenRest<V>);
+
+impl<A: TypeAnalyzer, V: Verify<usize>> AnalyzeWith<A> for Length<LenRest<V>> {
+    const CONST_SIZE: represent::TypeSize = represent::TypeSize::Dynamic;
+
+    fn dynamic_size(&self, _analyzer: &A) -> usize {
+        self.0.0
+    }
+}
+
+impl<M: Maker + BytesLeft, V: Verify<usize>> MakeWith<M> for LenRest<V> {
+    fn make_with(maker: &mut M) -> Result<LenRest<V>, M::Error> {
+        let len = maker.bytes_left();
+        let len = V::verify(len);
+        Ok(LenRest::new(len))
+    }
+}
+
+impl<V: Verify<usize>> TryFrom<usize> for LenRest<V> {
+    type Error = LengthError;
+
+    fn try_from(from: usize) -> Result<Self, LengthError> {
+        let verified = V::verify(from);
+        if from != verified {
+            return Err(LengthError::Verify { from, verified });
+        }
+        Ok(Self::new(verified))
     }
 }
 

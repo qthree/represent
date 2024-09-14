@@ -1,3 +1,4 @@
+pub mod blob;
 pub mod collections;
 pub mod condition;
 pub mod length;
