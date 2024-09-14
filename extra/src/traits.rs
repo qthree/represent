@@ -1,4 +1,4 @@
-use represent::{Maker, TypeAnalyzer, Visitor};
+use represent::{Maker, Visitor};
 
 pub trait MakeBlob: Maker {
     fn make_blob<T: bytemuck::Pod>(&mut self, len: usize) -> Result<Vec<T>, Self::Error>;

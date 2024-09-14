@@ -8,6 +8,10 @@ pub mod utility;
 pub trait Has<T> {
     fn give(&self) -> &T;
     fn give_mut(&mut self) -> &mut T;
+
+    #[doc(hidden)]
+    // to prevent manual implementations
+    fn _sealead(sealed: private::Sealed);
 }
 
 pub trait HasValue<T> {
@@ -23,6 +27,11 @@ impl<T, S: HasValue<T, Value = T>> Has<T> for S {
 
     fn give_mut(&mut self) -> &mut T {
         self.give_value_mut()
+    }
+
+    #[doc(hidden)]
+    fn _sealead(sealed: private::Sealed) {
+        match sealed {}
     }
 }
 
@@ -68,4 +77,8 @@ impl<T, S: MaybeHasValue<T, Value = T>> MaybeHas<T> for S {
     fn maybe_replace(&mut self, other: T) -> Option<T> {
         self.maybe_replace_value(other)
     }
+}
+
+mod private {
+    pub enum Sealed {}
 }

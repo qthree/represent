@@ -55,7 +55,7 @@ macro_rules! impl_analyzer (
         #analyze_type [$($bounds:tt)+] for $TY:ty
     ) => {
         impl<$($bounds)+> represent::AnalyzeType<T> for $TY {
-            const TYPE_CONST_SIZE: TypeSize = T::CONST_SIZE;
+            const TYPE_CONST_SIZE: represent::TypeSize = T::CONST_SIZE;
 
             fn type_fixed_size(&self) -> usize {
                 T::fixed_size(self)

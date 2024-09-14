@@ -1,8 +1,7 @@
 use std::{convert::TryFrom, marker::PhantomData};
 
 use represent::{
-    AnalyzeType, AnalyzeWith, MakeType, MakeWith, Maker, TypeAnalyzer, TypeSize, VisitType,
-    VisitWith, Visitor,
+    AnalyzeWith, MakeType, MakeWith, Maker, TypeAnalyzer, TypeSize, VisitType, VisitWith, Visitor,
 };
 
 use super::{slots::Slots, Has};
