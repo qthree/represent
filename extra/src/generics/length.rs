@@ -6,7 +6,7 @@ use represent::{
 };
 
 use super::{slots::Slots, Has};
-use crate::traits::BytesLeft;
+use crate::traits::{BytesLeft, FixedLength};
 //use crate::{Encrypt, MakeError, Sniffer};
 
 #[derive(Debug, Default)]
@@ -280,11 +280,11 @@ impl<const MAX: usize> Verify<usize> for MaxSkip<MAX> {
 // region: LenDelegate
 
 #[derive(Debug, Clone)]
-pub struct FixedLen<LEN> {
+pub struct LenFixed<LEN> {
     actual: Option<usize>,
     fixed: PhantomData<LEN>,
 }
-impl<LEN> FixedLen<LEN> {
+impl<LEN> LenFixed<LEN> {
     fn fixed() -> Self {
         Self {
             actual: None,
@@ -300,42 +300,42 @@ impl<LEN> FixedLen<LEN> {
     }
 }
 
-impl<LEN> From<usize> for FixedLen<LEN> {
+impl<LEN> From<usize> for LenFixed<LEN> {
     fn from(value: usize) -> Self {
         Self::from_actual_size(value)
     }
 }
 
-impl<LEN, D: TypeAnalyzer + AnalyzeType<LEN>> AnalyzeWith<D> for Length<FixedLen<LEN>> {
+impl<LEN: FixedLength<A>, A: TypeAnalyzer> AnalyzeWith<A> for Length<LenFixed<LEN>> {
     const CONST_SIZE: represent::TypeSize = represent::TypeSize::Fixed;
 
-    fn fixed_size(analyzer: &D) -> usize {
-        analyzer.type_fixed_size()
+    fn fixed_size(analyzer: &A) -> usize {
+        LEN::fixed_length(analyzer)
     }
 
-    fn dynamic_size(&self, analyzer: &D) -> usize {
+    fn dynamic_size(&self, analyzer: &A) -> usize {
         Self::fixed_size(analyzer)
     }
 }
 
-crate::impl_final_const!([LEN] for FixedLen<LEN> = 0);
+crate::impl_final_const!([LEN] for LenFixed<LEN> = 0);
 
-impl<M, LEN> MakeWith<M> for FixedLen<LEN>
+impl<M, LEN> MakeWith<M> for LenFixed<LEN>
 where
     M: Maker,
 {
-    fn make_with(_maker: &mut M) -> Result<FixedLen<LEN>, M::Error> {
+    fn make_with(_maker: &mut M) -> Result<LenFixed<LEN>, M::Error> {
         Ok(Self::fixed())
     }
 }
 
-impl<V, LEN> VisitWith<V> for FixedLen<LEN>
+impl<V, LEN: FixedLength<V>> VisitWith<V> for LenFixed<LEN>
 where
-    V: Visitor + AnalyzeType<LEN>,
+    V: Visitor,
     LengthError: Into<V::Error>,
 {
     fn visit_with(&self, visitor: &mut V) -> Result<(), V::Error> {
-        let expected = visitor.type_fixed_size();
+        let expected = LEN::fixed_length(visitor);
         if self.actual != Some(expected) {
             Err(LengthError::FixedLength {
                 expected,

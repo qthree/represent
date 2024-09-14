@@ -1,4 +1,4 @@
-use represent::{Maker, Visitor};
+use represent::{Maker, TypeAnalyzer, Visitor};
 
 pub trait MakeBlob: Maker {
     fn make_blob<T: bytemuck::Pod>(&mut self, len: usize) -> Result<Vec<T>, Self::Error>;
@@ -11,4 +11,8 @@ pub trait VisitBlob: Visitor {
 
 pub trait BytesLeft {
     fn bytes_left(&self) -> usize;
+}
+
+pub trait FixedLength<A> {
+    fn fixed_length(analyzer: &A) -> usize;
 }
