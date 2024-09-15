@@ -16,6 +16,31 @@ pub struct RepeatExt<T, LEN>(
     #[derivative(Debug = "ignore")] pub(crate) PhantomData<LEN>,
 );
 
+#[cfg(feature = "serde")]
+mod impl_serde {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    use super::*;
+
+    impl<'de, T: Deserialize<'de>, LEN> Deserialize<'de> for RepeatExt<T, LEN> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            Ok(Self(Vec::<T>::deserialize(deserializer)?, PhantomData))
+        }
+    }
+
+    impl<T: Serialize, LEN> serde::Serialize for RepeatExt<T, LEN> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.0.serialize(serializer)
+        }
+    }
+}
+
 impl<T, LEN> RepeatExt<T, LEN> {
     pub fn new_unchecked(values: Vec<T>) -> Self {
         Self(values, PhantomData)

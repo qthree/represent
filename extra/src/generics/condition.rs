@@ -15,6 +15,7 @@ pub trait Condition<D> {
 
 #[derive(derivative::Derivative)]
 #[derivative(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Conditional<C, T>(
     pub Option<T>,
     #[derivative(Debug = "ignore")] pub(crate) PhantomData<C>,

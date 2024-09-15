@@ -28,6 +28,11 @@ impl Slots {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 pub struct Store<T, const SLOT: usize> {
     pub inner: T,
 }

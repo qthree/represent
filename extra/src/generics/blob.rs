@@ -1,4 +1,4 @@
-use std::{convert::TryInto, fmt, marker::PhantomData};
+use std::{convert::TryInto, default, fmt, marker::PhantomData};
 
 use represent::{
     AnalyzeType, AnalyzeWith, MakeType, MakeWith, TypeAnalyzer, TypeSize, VisitType, VisitWith,
@@ -115,9 +115,100 @@ where
 #[derive(Clone)]
 pub struct BigStr<LEN>(pub BigArr<u8, LEN>);
 
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(untagged)
+)]
+enum MaybeStr<'a> {
+    Utf8 {
+        string: &'a str,
+        #[cfg_attr(
+            feature = "serde",
+            serde(default, skip_serializing_if = "impl_serde::is_zero")
+        )]
+        tail_zeros: usize,
+    },
+    Bytes {
+        bytes: &'a [u8],
+        #[cfg_attr(
+            feature = "serde",
+            serde(default, skip_serializing_if = "impl_serde::is_zero")
+        )]
+        tail_zeros: usize,
+    },
+}
+
+impl<'a> fmt::Debug for MaybeStr<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug = f.debug_map();
+        match self {
+            Self::Utf8 { string, .. } => debug.entry(&"string", string),
+            Self::Bytes { bytes, .. } => debug.entry(&"bytes", bytes),
+        };
+        match self {
+            Self::Utf8 { tail_zeros, .. } | Self::Bytes { tail_zeros, .. } if *tail_zeros > 0 => {
+                debug.entry(&"tail_zeros", tail_zeros);
+            }
+            _ => (),
+        };
+        debug.finish()
+    }
+}
+
+#[cfg(feature = "serde")]
+mod impl_serde {
+    use super::*;
+
+    pub(super) fn is_zero(val: &usize) -> bool {
+        *val == 0
+    }
+
+    impl<'de, LEN> serde::Deserialize<'de> for BigStr<LEN> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            let maybe_str = MaybeStr::deserialize(deserializer)?;
+            let (bytes, tail_zeros) = match maybe_str {
+                MaybeStr::Utf8 { string, tail_zeros } => (string.as_bytes(), tail_zeros),
+                MaybeStr::Bytes { bytes, tail_zeros } => (bytes, tail_zeros),
+            };
+            let mut vec = Vec::with_capacity(bytes.len() + tail_zeros);
+            vec.extend_from_slice(bytes);
+            if tail_zeros > 0 {
+                vec.resize(vec.len() + tail_zeros, 0);
+            }
+            Ok(Self(BigArr::new_unchecked(vec)))
+        }
+    }
+
+    impl<LEN> serde::Serialize for BigStr<LEN> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            self.as_maybe_str().serialize(serializer)
+        }
+    }
+}
+
 impl<LEN> BigStr<LEN> {
     pub fn new_unchecked(vec: Vec<u8>) -> Self {
         Self(BigArr::new_unchecked(vec))
+    }
+
+    fn as_maybe_str(&self) -> MaybeStr {
+        let slice = &self.0.0[..];
+        let last_non_zero = slice.iter().rposition(|ch| *ch != 0).unwrap_or(0);
+        let tail_zeros = slice.len() - last_non_zero;
+        match std::str::from_utf8(&slice[..last_non_zero]) {
+            Ok(string) => MaybeStr::Utf8 { string, tail_zeros },
+            _ => MaybeStr::Bytes {
+                bytes: slice,
+                tail_zeros,
+            },
+        }
     }
 }
 
@@ -157,20 +248,9 @@ impl<LEN> BigStr<LEN> {
 
 impl<LEN> fmt::Debug for BigStr<LEN> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        #[expect(dead_code)]
-        #[derive(Debug)]
-        enum Str<'a> {
-            Utf8(&'a str),
-            Bytes(&'a [u8]),
-        }
-        let vec = &self.0.0[..];
-        let end = vec.iter().position(|ch| *ch == 0).unwrap_or(vec.len());
-        let str = match std::str::from_utf8(&vec[..end]) {
-            Ok(str) => Str::Utf8(str),
-            _ => Str::Bytes(vec),
-        };
+        let str = self.as_maybe_str();
 
-        <Str as std::fmt::Debug>::fmt(&str, f)
+        <MaybeStr as std::fmt::Debug>::fmt(&str, f)
     }
 }
 
