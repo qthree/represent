@@ -13,3 +13,15 @@ pub type BigArrSlot<T, const SLOT: usize> = BigArr<T, LenSlot<(), SLOT>>;
 pub type TailBytes = BigArr<u8, LenRest>;
 
 pub type StaticStr<const LEN: usize> = BigStr<LenConst<LEN>>;
+
+impl<L, T> RepeatMake<L, T> {
+    pub fn new(vec: Vec<T>) -> Self {
+        Self::new_unchecked(vec)
+    }
+}
+
+impl<L, T> BigArrMake<L, T> {
+    pub fn new(vec: Vec<T>) -> Self {
+        Self::new_unchecked(vec)
+    }
+}
