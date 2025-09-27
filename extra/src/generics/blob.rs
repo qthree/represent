@@ -1,4 +1,4 @@
-use std::{convert::TryInto, default, fmt, marker::PhantomData};
+use std::{borrow::Cow, convert::TryInto, default, ffi::{CStr, CString}, fmt, marker::PhantomData};
 
 use represent::{
     AnalyzeType, AnalyzeWith, MakeType, MakeWith, TypeAnalyzer, TypeSize, VisitType, VisitWith,
@@ -8,7 +8,19 @@ use super::length::{Length, LengthError};
 use crate::traits::{MakeBlob, VisitBlob};
 
 // region: BigArr
-pub struct BigArr<T, LEN>(pub Vec<T>, pub(crate) PhantomData<LEN>);
+pub struct BigArr<T, LEN>(pub(crate) Vec<T>, pub(crate) PhantomData<LEN>);
+
+impl<T, LEN> BigArr<T, LEN> {
+    pub fn into_vec(self) -> Vec<T> {
+        self.0
+    }
+    pub fn as_slice(&self) -> &[T] {
+        &self.0
+    }
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        &mut self.0
+    }
+}
 
 #[cfg(feature = "serde")]
 impl<'de, T: serde::Deserialize<'de>, LEN> serde::Deserialize<'de> for BigArr<T, LEN> {
@@ -113,7 +125,7 @@ where
 // region: BigStr
 
 #[derive(Clone)]
-pub struct BigStr<LEN>(pub BigArr<u8, LEN>);
+pub struct BigStr<LEN>(BigArr<u8, LEN>);
 
 #[cfg_attr(
     feature = "serde",
@@ -198,11 +210,15 @@ impl<LEN> BigStr<LEN> {
         Self(BigArr::new_unchecked(vec))
     }
 
-    fn as_maybe_str(&self) -> MaybeStr {
+    fn as_maybe_str(&self) -> MaybeStr<'_> {
         let slice = &self.0.0[..];
-        let last_non_zero = slice.iter().rposition(|ch| *ch != 0).unwrap_or(0);
-        let tail_zeros = slice.len() - last_non_zero;
-        match std::str::from_utf8(&slice[..last_non_zero]) {
+        let (slice, tail) = if let Some(last_non_zero) = slice.iter().rposition(|ch| *ch != 0) {
+            slice.split_at(last_non_zero + 1)
+        } else {
+            (slice, Default::default())
+        };
+        let tail_zeros = tail.len();
+        match std::str::from_utf8(slice) {
             Ok(string) => MaybeStr::Utf8 { string, tail_zeros },
             _ => MaybeStr::Bytes {
                 bytes: slice,
@@ -243,6 +259,47 @@ impl<LEN> BigStr<LEN> {
         }
         vec.resize(verified, fill);
         Ok(Self(BigArr::new_unchecked(vec)))
+    }
+    
+    /*
+    pub fn into_c_string(self) -> Option<CString> {
+        let mut bytes = self.0.0;
+        if bytes.get(0).is_none_or(|ch| *ch == 0) {
+            None
+        } else if let Some(pos) = bytes.iter().position(|b| *b == 0) {
+            bytes.truncate(pos + 1);
+            // SAFETY: We know there is only one nul byte, at the end of the vec.
+            Some(unsafe { CString::from_vec_with_nul_unchecked(bytes) })
+        } else {
+            // SAFETY: We know there is no nul bytes
+            Some(unsafe { CString::from_vec_unchecked(bytes) })
+        }
+    }
+
+    pub fn to_c_str(&self) -> Option<Cow<'_, CStr>> {
+        let bytes = &self.0.0;
+        if bytes.get(0).is_none_or(|ch| *ch == 0) {
+            None
+        } else if let Some(pos) = bytes.iter().position(|b| *b == 0) {
+            let bytes = &bytes[0..=pos];
+            // SAFETY: We know there is only one nul byte, at the end of the vec.
+            Some(Cow::Borrowed(unsafe { CStr::from_bytes_with_nul_unchecked(bytes) }))
+        } else {
+            let mut vec = Vec::with_capacity(bytes.len()+1);
+            vec.extend_from_slice(&bytes);
+            vec.push(0);
+            // SAFETY: We know there is no nul bytes
+            Some(Cow::Owned(unsafe { CString::from_vec_with_nul_unchecked(vec) }))
+        }
+    }
+    */
+
+    pub fn into_vec(self) -> Vec<u8> {
+        self.0.into_vec()
+    }
+
+    pub fn as_slice(&self) -> &[u8] {
+        self.0.as_slice()
     }
 }
 

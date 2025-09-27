@@ -45,6 +45,12 @@ impl<T, LEN> RepeatExt<T, LEN> {
     pub fn new_unchecked(values: Vec<T>) -> Self {
         Self(values, PhantomData)
     }
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+    pub fn as_slice(&self) -> &[T] {
+        self.0.as_slice()
+    }
 }
 
 impl<D: TypeAnalyzer, T: AnalyzeWith<D>, LEN: AnalyzeWith<D>> AnalyzeWith<D> for RepeatExt<T, LEN>

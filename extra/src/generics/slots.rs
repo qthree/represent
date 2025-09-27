@@ -27,7 +27,7 @@ impl Slots {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -35,6 +35,11 @@ impl Slots {
 )]
 pub struct Store<T, const SLOT: usize> {
     pub inner: T,
+}
+impl<T, const SLOT: usize> Store<T, SLOT> {
+    pub fn new(value: T) -> Self {
+        Self{ inner: value }
+    }
 }
 
 impl<D: TypeAnalyzer, T: AnalyzeWith<D>, const SLOT: usize> AnalyzeWith<D> for Store<T, SLOT> {
