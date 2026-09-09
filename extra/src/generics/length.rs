@@ -107,7 +107,7 @@ impl<LEN, D: TypeAnalyzer, V> AnalyzeWith<D> for Length<LenMake<LEN, V>> {
     const CONST_SIZE: represent::TypeSize = represent::TypeSize::Dynamic;
 
     fn dynamic_size(&self, _analyzer: &D) -> usize {
-        self.0.0
+        self.0 .0
     }
 }
 
@@ -175,7 +175,7 @@ impl<D: TypeAnalyzer, V, const SLOT: usize> AnalyzeWith<D> for Length<LenSlot<V,
     const CONST_SIZE: represent::TypeSize = represent::TypeSize::Dynamic;
 
     fn dynamic_size(&self, _analyzer: &D) -> usize {
-        self.0.0
+        self.0 .0
     }
 }
 
@@ -270,7 +270,11 @@ pub struct MaxSkip<const MAX: usize>;
 
 impl<const MAX: usize> Verify<usize> for MaxSkip<MAX> {
     fn verify(val: usize) -> usize {
-        if val > MAX { 0 } else { val }
+        if val > MAX {
+            0
+        } else {
+            val
+        }
     }
 }
 
@@ -371,7 +375,7 @@ impl<A: TypeAnalyzer, V: Verify<usize>> AnalyzeWith<A> for Length<LenRest<V>> {
     const CONST_SIZE: represent::TypeSize = represent::TypeSize::Dynamic;
 
     fn dynamic_size(&self, _analyzer: &A) -> usize {
-        self.0.0
+        self.0 .0
     }
 }
 

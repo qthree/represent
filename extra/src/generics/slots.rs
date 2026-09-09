@@ -38,7 +38,7 @@ pub struct Store<T, const SLOT: usize> {
 }
 impl<T, const SLOT: usize> Store<T, SLOT> {
     pub fn new(value: T) -> Self {
-        Self{ inner: value }
+        Self { inner: value }
     }
 }
 

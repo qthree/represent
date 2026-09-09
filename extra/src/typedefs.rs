@@ -21,6 +21,7 @@ impl<L, T> RepeatMake<L, T> {
     pub fn new(vec: Vec<T>) -> Self {
         Self::new_unchecked(vec)
     }
+
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -36,6 +37,7 @@ impl TailBytes {
     pub fn new(vec: Vec<u8>) -> Self {
         Self::new_unchecked(vec)
     }
+
     pub fn as_mut(&mut self) -> &mut Vec<u8> {
         &mut self.0
     }
@@ -49,6 +51,7 @@ impl<L, const MAX: usize> StrMax<L, MAX> {
             None
         }
     }
+
     pub fn empty() -> Self {
         Self::new_unchecked(vec![])
     }
@@ -64,6 +67,7 @@ impl<const LEN: usize> StaticStr<LEN> {
             None
         }
     }
+
     pub fn zeros() -> Self {
         Self::new_unchecked(vec![0; LEN])
     }
@@ -85,4 +89,3 @@ impl<L> Default for BigStr<LenMake<L, ()>> {
         Self::new_unchecked(Vec::new())
     }
 }
-
