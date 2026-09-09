@@ -64,6 +64,9 @@ impl<const LEN: usize> StaticStr<LEN> {
             None
         }
     }
+    pub fn zeros() -> Self {
+        Self::new_unchecked(vec![0; LEN])
+    }
 }
 
 impl<T: Copy, const LEN: usize> BigStaticArr<T, LEN> {
