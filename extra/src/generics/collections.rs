@@ -9,6 +9,8 @@ use super::length::{Length, LengthError};
 
 // region: RepeatExt
 
+const REPEAT_EXT_MAX_STARTING_CAPACITY: usize = 1024;
+
 #[derive(derivative::Derivative, Clone)]
 #[derivative(Debug)]
 pub struct RepeatExt<T, LEN>(
@@ -92,7 +94,7 @@ where
     fn make_with(maker: &mut M) -> Result<RepeatExt<T, LEN>, M::Error> {
         let len: LEN = maker.make_type()?;
         let len = Length(len).dynamic_size(maker);
-        let mut vec = Vec::<T>::with_capacity(len);
+        let mut vec = Vec::<T>::with_capacity(len.min(REPEAT_EXT_MAX_STARTING_CAPACITY));
         for index in 0..len {
             vec.push(maker.make_keyed(index)?);
         }
